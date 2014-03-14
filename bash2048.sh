@@ -115,9 +115,6 @@ function end_game {
   exit 0
 }
 
-#start game
-echo "Welcome to bash implementation of 2048"
-
 #init board
 for i in $(seq 0 15); do board[$i]="0"; done
 generate_token
