@@ -3,10 +3,10 @@
 declare -ia board
 declare -ia joins
 declare -i pieces=0
-declare -i board_size=5
+declare -i board_size=4
 declare -i target=2048
 
-header="Bash 2048 v0.2 by Josef Zila (josefzila@gmail.com)"
+header="Bash 2048 v0.3 by Josef Zila (josefzila@gmail.com)"
 ESC=$'\e'
 
 function print_header {
@@ -98,7 +98,7 @@ function push_fields {
     let board[$first]*=2
     let "board[$first]==$target" && end_game 1
     let board[$second]=0
-    let joins[$first]=1
+    let joins[$2]=1
     let pieces-=1
     let change=1
   }
@@ -106,7 +106,6 @@ function push_fields {
 
 function make_push_rec {
   local n
-  let "$2==$3" && return 
   let "n=$2+1"
   push_fields $1 $2 $4
   let "n!=$3" && {
@@ -149,6 +148,44 @@ function end_game {
   }
   echo "You have lost, better luck next time."
   exit 0
+}
+
+function help {
+  cat <<END_HELP
+Usage: $1 [-b INTEGER] [-t INTEGER] [-h]
+
+  -b			specify game board size (sizes 3-9 allowed)
+  -t			specify target score to win (needs to be power of 2)
+  -h			this help
+
+END_HELP
+}
+
+#parse commandline options
+while getopts ":b:th" opt; do
+  case $opt in
+    b ) board_size="$OPTARG";;
+    t ) target="$OPTARG";;
+    h ) help $0
+        exit 0;;
+    \?) echo "Invalid option: -"$OPTARG", try $0 -h" >&2
+            exit 1;;
+    : ) echo "Option -"$OPTARG" requires an argument, try $0 -h" >&2
+            exit 1;;
+  esac
+done
+
+# check board size input
+let '(board_size>=3)&(board_size<=9)' || {
+  echo "Invalid board size, please choose size between 3 and 9"
+  exit -1 
+}
+
+# check target input
+echo "obase=2;$target" | bc | grep -e '^1[^1]*$'
+let $? && {
+  echo "Invalid target, has to be power of two"
+  exit -1 
 }
 
 #init board
