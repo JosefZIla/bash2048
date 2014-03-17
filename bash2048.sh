@@ -3,6 +3,8 @@
 declare -ia board
 declare -ia joins
 declare -i pieces=0
+
+#default config
 declare -i board_size=4
 declare -i target=2048
 
@@ -10,7 +12,7 @@ header="Bash 2048 v0.3 by Josef Zila (josefzila@gmail.com)"
 ESC=$'\e'
 
 function print_header {
-  echo $header pieces=$pieces
+  echo $header pieces=$pieces target=$target
   echo
 }
 
@@ -87,7 +89,7 @@ function push_fields {
   let ${board[$first]} || { 
     let ${board[$second]} && {
       board[$first]=${board[$second]}
-      joins[$first]=${joins[$second]}
+      joins[$2]=${joins[$2+1]}
       let board[$second]=0
       let change=1
       return
@@ -161,11 +163,22 @@ Usage: $1 [-b INTEGER] [-t INTEGER] [-h]
 END_HELP
 }
 
+
 #parse commandline options
-while getopts ":b:th" opt; do
+while getopts "b:t:h" opt; do
   case $opt in
-    b ) board_size="$OPTARG";;
-    t ) target="$OPTARG";;
+    b ) board_size="$OPTARG"
+      let '(board_size>=3)&(board_size<=9)' || {
+        echo "Invalid board size, please choose size between 3 and 9"
+        exit -1 
+      };;
+    t ) target="$OPTARG"
+      echo $target $OPTARG
+      echo "obase=2;$OPTARG" | bc | grep -e '^1[^1]*$'
+      let $? && {
+        echo "Invalid target, has to be power of two"
+        exit -1 
+      };;
     h ) help $0
         exit 0;;
     \?) echo "Invalid option: -"$OPTARG", try $0 -h" >&2
@@ -174,19 +187,6 @@ while getopts ":b:th" opt; do
             exit 1;;
   esac
 done
-
-# check board size input
-let '(board_size>=3)&(board_size<=9)' || {
-  echo "Invalid board size, please choose size between 3 and 9"
-  exit -1 
-}
-
-# check target input
-echo "obase=2;$target" | bc | grep -e '^1[^1]*$'
-let $? && {
-  echo "Invalid target, has to be power of two"
-  exit -1 
-}
 
 #init board
 let fields_total=board_size*board_size
