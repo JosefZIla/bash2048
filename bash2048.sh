@@ -1,14 +1,13 @@
 #!/bin/bash
 
 declare -ia board
-declare -ia joins
 declare -i pieces=0
 
 #default config
 declare -i board_size=4
 declare -i target=2048
 
-header="Bash 2048 v0.3 by Josef Zila (josefzila@gmail.com)"
+header="Bash 2048 v0.5 (bugs: https://github.com/mydzor/bash2048/issues)"
 ESC=$'\e'
 
 function print_header {
@@ -53,7 +52,6 @@ function print_board {
 }
 
 function generate_token {
-  let pieces==fields_total && end_game 0
   while true; do
     let pos=RANDOM%fields_total
     let board[$pos] || {
@@ -67,59 +65,52 @@ function generate_token {
 }
 
 function push_fields {
-  case $3 in
+  case $4 in
     "up")
       let "first=$2*$board_size+$1"
-      let "second=($2+1)*$board_size+$1"
+      let "second=($2+$3)*$board_size+$1"
       ;;
     "down")
-      let "first=($2+1)*$board_size+$1"
-      let "second=$2*$board_size+$1"
+      let "first=(index_max-$2)*$board_size+$1"
+      let "second=(index_max-$2-$3)*$board_size+$1"
       ;;
     "left")
       let "first=$1*$board_size+$2"
-      let "second=$1*$board_size+($2+1)"
+      let "second=$1*$board_size+($2+$3)"
       ;;
     "right")
-      let "first=$1*$board_size+($2+1)"
-      let "second=$1*$board_size+$2"
+      let "first=$1*$board_size+(index_max-$2)"
+      let "second=$1*$board_size+(index_max-$2-$3)"
       ;;
   esac
-  let "can_join=(!joins[$2])&(!joins[$2+1])"
   let ${board[$first]} || { 
     let ${board[$second]} && {
       board[$first]=${board[$second]}
-      joins[$2]=${joins[$2+1]}
       let board[$second]=0
       let change=1
       return
     }
     return
   }
-  let "(${board[$first]}==${board[second]})&(can_join)" && { 
+  let ${board[$second]} && let flag_skip=1
+  let "${board[$first]}==${board[second]}" && { 
     let board[$first]*=2
     let "board[$first]==$target" && end_game 1
     let board[$second]=0
-    let joins[$2]=1
     let pieces-=1
     let change=1
   }
 }
 
-function make_push_rec {
-  local n
-  let "n=$2+1"
-  push_fields $1 $2 $4
-  let "n!=$3" && {
-    make_push_rec $1 $n $3 $4
-  }  
-}
-
 function push_tokens {
   for i in $(seq 0 $index_max); do
-    for j in $(seq 0 $index_max); do joins[$j]="0"; done
-    for pass in $(seq $index_max -1 1); do
-      make_push_rec $i 0 $pass $1 
+    for j in $(seq 0 $index_max); do
+      flag_skip=0
+      let increment_max=index_max-j
+      for k in $(seq 1 $increment_max); do
+        let flag_skip && break
+        push_fields $i $j $k $1
+      done 
     done
   done
 }
@@ -173,7 +164,6 @@ while getopts "b:t:h" opt; do
         exit -1 
       };;
     t ) target="$OPTARG"
-      echo $target $OPTARG
       echo "obase=2;$OPTARG" | bc | grep -e '^1[^1]*$'
       let $? && {
         echo "Invalid target, has to be power of two"
@@ -192,7 +182,6 @@ done
 let fields_total=board_size*board_size
 let index_max=board_size-1
 for i in $(seq 0 $fields_total); do board[$i]="0"; done
-for i in $(seq 0 $index_max); do joins[$i]="0"; done
 generate_token
 first_round=$last_added
 generate_token
@@ -201,4 +190,5 @@ while true; do
   key_react
   let change && generate_token
   first_round=-1
+  let pieces==fields_total-1 && end_game 0 #detect if no moves are possible
 done 
