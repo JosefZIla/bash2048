@@ -232,5 +232,4 @@ while true; do
    check_moves
    let moves==0 && end_game 0 #lose the game
   }
-possible
 done 
