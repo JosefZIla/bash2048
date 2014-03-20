@@ -132,7 +132,7 @@ function push_pieces {
       let board[$second]=0
       let pieces-=1
       let change=1
-      echo "joined piece from [$second] with [$first], new value=$board[$first]" >&3
+      echo "joined piece from [$second] with [$first], new value=${board[$first]}" >&3
     else
       let moves++
     fi
