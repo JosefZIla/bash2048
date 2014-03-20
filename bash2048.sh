@@ -72,6 +72,7 @@ function generate_piece {
       let value=RANDOM%10?2:4
       board[$pos]=$value
       last_added=$pos
+      echo Generated new piece with value $value at position [$pos] >&3
       break;
     }
   done
