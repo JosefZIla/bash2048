@@ -14,10 +14,13 @@ declare header="Bash 2048 v1.0 RC1 (bugs: https://github.com/mydzor/bash2048/iss
 declare -i board_size=4
 declare -i target=2048
 
+exec 3>/dev/null     # no logging by default
+
 # print currect status of the game, last added pieces are marked red
 function print_board {
   clear
   echo $header pieces=$pieces target=$target
+  echo Board status: >&3
   echo
   printf '/------'
   for l in $(seq 1 $index_max); do
@@ -33,8 +36,10 @@ function print_board {
         else
           printf '%4d | ' ${board[l*$board_size+m]}
         fi
+        printf '%4d | ' ${board[l*$board_size+m]} >&3
       else
         printf '     | '
+        printf '     | ' >&3
       fi
     done
     let l==$index_max || {
@@ -43,6 +48,7 @@ function print_board {
         printf '|------'
       done
       printf '|\n'
+      printf '\n' >&3
     }
   done
   printf '\n\\------'
@@ -110,6 +116,7 @@ function push_pieces {
         board[$first]=${board[$second]}
         let board[$second]=0
         let change=1
+        echo "move piece with value ${board[$first]} from [$second] to [$first]" >&3
       else
         let moves++
       fi
@@ -125,6 +132,7 @@ function push_pieces {
       let board[$second]=0
       let pieces-=1
       let change=1
+      echo "joined piece from [$second] with [$first], new value=$board[$first]" >&3
     else
       let moves++
     fi
@@ -132,6 +140,7 @@ function push_pieces {
 }
 
 function apply_push {
+  echo input: $1 key >&3
   for i in $(seq 0 $index_max); do
     for j in $(seq 0 $index_max); do
       flag_skip=0
@@ -193,7 +202,7 @@ END_HELP
 
 
 #parse commandline options
-while getopts "b:t:h" opt; do
+while getopts "b:t:l:h" opt; do
   case $opt in
     b ) board_size="$OPTARG"
       let '(board_size>=3)&(board_size<=9)' || {
@@ -208,6 +217,7 @@ while getopts "b:t:h" opt; do
       };;
     h ) help $0
         exit 0;;
+    l ) exec 3>$OPTARG;;
     \?) echo "Invalid option: -"$OPTARG", try $0 -h" >&2
             exit 1;;
     : ) echo "Option -"$OPTARG" requires an argument, try $0 -h" >&2
@@ -232,4 +242,4 @@ while true; do
    check_moves
    let moves==0 && end_game 0 #lose the game
   }
-done 
+done
