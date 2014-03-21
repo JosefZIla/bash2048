@@ -16,6 +16,25 @@ declare -i target=2048
 
 exec 3>/dev/null     # no logging by default
 
+#simplified replacement of seq command
+function _seq {
+  local cur=1
+  local max
+  local inc=1
+  case $# in
+    1) let max=$1;;
+    2) let cur=$1
+       let max=$2;;
+    3) let cur=$1
+       let inc=$2
+       let max=$3;;
+  esac
+  while test $max -ge $cur; do
+    printf "$cur "
+    let cur+=inc
+  done
+}
+
 # print currect status of the game, last added pieces are marked red
 function print_board {
   clear
@@ -23,13 +42,13 @@ function print_board {
   echo Board status: >&3
   echo
   printf '/------'
-  for l in $(seq 1 $index_max); do
+  for l in $(_seq 1 $index_max); do
     printf '|------'
   done
   printf '\\\n'
-  for l in $(seq 0 $index_max); do
+  for l in $(_seq 0 $index_max); do
     printf '| '
-    for m in $(seq 0 $index_max); do
+    for m in $(_seq 0 $index_max); do
       if let ${board[l*$board_size+m]}; then
         if let '(last_added==(l*board_size+m))|(first_round==(l*board_size+m))'; then
           printf '\033[1m\033[31m%4d \033[0m| ' ${board[l*$board_size+m]}
@@ -44,7 +63,7 @@ function print_board {
     done
     let l==$index_max || {
       printf '\n|------'
-      for l in $(seq 1 $index_max); do
+      for l in $(_seq 1 $index_max); do
         printf '|------'
       done
       printf '|\n'
@@ -52,7 +71,7 @@ function print_board {
     }
   done
   printf '\n\\------'
-  for l in $(seq 1 $index_max); do
+  for l in $(_seq 1 $index_max); do
     printf '|------'
   done
   printf '/\n'
@@ -142,11 +161,11 @@ function push_pieces {
 
 function apply_push {
   echo input: $1 key >&3
-  for i in $(seq 0 $index_max); do
-    for j in $(seq 0 $index_max); do
+  for i in $(_seq 0 $index_max); do
+    for j in $(_seq 0 $index_max); do
       flag_skip=0
       let increment_max=index_max-j
-      for k in $(seq 1 $increment_max); do
+      for k in $(_seq 1 $increment_max); do
         let flag_skip && break
         push_pieces $i $j $k $1 $2
       done 
@@ -229,7 +248,7 @@ done
 #init board
 let fields_total=board_size*board_size
 let index_max=board_size-1
-for i in $(seq 0 $fields_total); do board[$i]="0"; done
+for i in $(_seq 0 $fields_total); do board[$i]="0"; done
 let pieces=0
 generate_piece
 first_round=$last_added
