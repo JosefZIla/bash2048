@@ -8,7 +8,7 @@ declare -i flag_skip # flag that prevents doing more than one operation on
 declare -i moves     # stores number of possible moves to determine if player lost 
                      # the game
 declare ESC=$'\e'    # escape byte
-declare header="Bash 2048 v1.0 RC1 (bugs: https://github.com/mydzor/bash2048/issues)"
+declare header="Bash 2048 v1.0 (bugs: https://github.com/mydzor/bash2048/issues)"
 
 #default config
 declare -i board_size=4
@@ -225,10 +225,11 @@ function end_game {
 
 function help {
   cat <<END_HELP
-Usage: $1 [-b INTEGER] [-t INTEGER] [-h]
+Usage: $1 [-b INTEGER] [-t INTEGER] [-l FILE] [-h]
 
   -b			specify game board size (sizes 3-9 allowed)
   -t			specify target score to win (needs to be power of 2)
+  -l			log debug info into specified file
   -h			this help
 
 END_HELP
