@@ -209,6 +209,13 @@ function key_react {
         D) apply_push left;;
       esac
     }
+  } || {
+    case $REPLY in
+      k) apply_push up;;
+      j) apply_push down;;
+      l) apply_push right;;
+      h) apply_push left;;
+    esac
   }
 }
 
