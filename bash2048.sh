@@ -14,6 +14,20 @@ declare header="Bash 2048 v1.0 RC1 (bugs: https://github.com/mydzor/bash2048/iss
 declare -i board_size=4
 declare -i target=2048
 
+#for colorizing numbers
+declare -a colors
+colors[2]=33         # yellow text
+colors[4]=32         # green text
+colors[8]=34         # blue text
+colors[16]=36        # cyan text
+colors[32]=35        # purple text
+colors[64]=43        # yellow background
+colors[128]=42       # green background
+colors[256]=44       # blue background
+colors[512]=46       # cyan background
+colors[1024]=45      # purple background
+colors[2048]=41      # red background (won with default target)
+
 exec 3>/dev/null     # no logging by default
 
 #simplified replacement of seq command
@@ -47,18 +61,18 @@ function print_board {
   done
   printf '\\\n'
   for l in $(_seq 0 $index_max); do
-    printf '| '
+    printf '|'
     for m in $(_seq 0 $index_max); do
       if let ${board[l*$board_size+m]}; then
         if let '(last_added==(l*board_size+m))|(first_round==(l*board_size+m))'; then
-          printf '\033[1m\033[31m%4d \033[0m| ' ${board[l*$board_size+m]}
+          printf '\033[1m\033[31m %4d \033[0m|' ${board[l*$board_size+m]}
         else
-          printf '%4d | ' ${board[l*$board_size+m]}
+          printf "\033[1m\033[${colors[${board[l*$board_size+m]}]}m %4d\033[0m |" ${board[l*$board_size+m]}
         fi
-        printf '%4d | ' ${board[l*$board_size+m]} >&3
+        printf " %4d |" ${board[l*$board_size+m]} >&3
       else
-        printf '     | '
-        printf '     | ' >&3
+        printf '      |'
+        printf '      |' >&3
       fi
     done
     let l==$index_max || {
