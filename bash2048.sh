@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #important variables
 declare -ia board    # array that keeps track of game status
