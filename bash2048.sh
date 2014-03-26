@@ -21,12 +21,12 @@ colors[4]=32         # green text
 colors[8]=34         # blue text
 colors[16]=36        # cyan text
 colors[32]=35        # purple text
-colors[64]=43        # yellow background
-colors[128]=42       # green background
-colors[256]=44       # blue background
-colors[512]=46       # cyan background
-colors[1024]=45      # purple background
-colors[2048]=41      # red background (won with default target)
+colors[64]="33m\033[7"        # yellow background
+colors[128]="32m\033[7"       # green background
+colors[256]="34m\033[7"       # blue background
+colors[512]="36m\033[7"       # cyan background
+colors[1024]="35m\033[7"      # purple background
+colors[2048]="31m\033[7"      # red background (won with default target)
 
 exec 3>/dev/null     # no logging by default
 
