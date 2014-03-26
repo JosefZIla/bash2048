@@ -3,12 +3,13 @@
 #important variables
 declare -ia board    # array that keeps track of game status
 declare -i pieces    # number of pieces present on board
+declare -i score=0   # score variable
 declare -i flag_skip # flag that prevents doing more than one operation on
                      # single field in one step
 declare -i moves     # stores number of possible moves to determine if player lost 
                      # the game
 declare ESC=$'\e'    # escape byte
-declare header="Bash 2048 v1.0 (bugs: https://github.com/mydzor/bash2048/issues)"
+declare header="Bash 2048 v1.1 (https://github.com/mydzor/bash2048)"
 
 #default config
 declare -i board_size=4
@@ -29,6 +30,8 @@ colors[1024]="35m\033[7"      # purple background
 colors[2048]="31m\033[7"      # red background (won with default target)
 
 exec 3>/dev/null     # no logging by default
+
+trap "end_game 0" INT #handle INT signal
 
 #simplified replacement of seq command
 function _seq {
@@ -52,9 +55,9 @@ function _seq {
 # print currect status of the game, last added pieces are marked red
 function print_board {
   clear
-  echo $header pieces=$pieces target=$target
-  echo Board status: >&3
-  echo
+  printf "$header pieces=$pieces target=$target score=$score\n"
+  printf "Board status:\n" >&3
+  printf "\n"
   printf '/------'
   for l in $(_seq 1 $index_max); do
     printf '|------'
@@ -105,7 +108,7 @@ function generate_piece {
       let value=RANDOM%10?2:4
       board[$pos]=$value
       last_added=$pos
-      echo Generated new piece with value $value at position [$pos] >&3
+      printf "Generated new piece with value $value at position [$pos]\n" >&3
       break;
     }
   done
@@ -150,7 +153,7 @@ function push_pieces {
         board[$first]=${board[$second]}
         let board[$second]=0
         let change=1
-        echo "move piece with value ${board[$first]} from [$second] to [$first]" >&3
+        printf "move piece with value ${board[$first]} from [$second] to [$first]\n" >&3
       else
         let moves++
       fi
@@ -166,7 +169,8 @@ function push_pieces {
       let board[$second]=0
       let pieces-=1
       let change=1
-      echo "joined piece from [$second] with [$first], new value=${board[$first]}" >&3
+      let score+=${board[$first]}
+      printf "joined piece from [$second] with [$first], new value=${board[$first]}\n" >&3
     else
       let moves++
     fi
@@ -174,7 +178,7 @@ function push_pieces {
 }
 
 function apply_push {
-  echo input: $1 key >&3
+  printf "\n\ninput: $1 key\n" >&3
   for i in $(_seq 0 $index_max); do
     for j in $(_seq 0 $index_max); do
       flag_skip=0
@@ -221,12 +225,14 @@ function key_react {
 
 function end_game {
   print_board
-  echo GAME OVER
+  printf "GAME OVER\n"
+  printf "Your score: $score\n"
+  stty echo
   let $1 && {
-    echo "Congratulations you have achieved $target"
+    printf "Congratulations you have achieved $target\n"
     exit 0
   }
-  echo "You have lost, better luck next time."
+  printf "You have lost, better luck next time.\033[0m\n"
   exit 0
 }
 
@@ -248,21 +254,21 @@ while getopts "b:t:l:h" opt; do
   case $opt in
     b ) board_size="$OPTARG"
       let '(board_size>=3)&(board_size<=9)' || {
-        echo "Invalid board size, please choose size between 3 and 9"
+        printf "Invalid board size, please choose size between 3 and 9\n"
         exit -1 
       };;
     t ) target="$OPTARG"
-      echo "obase=2;$target" | bc | grep -e '^1[^1]*$'
+      printf "obase=2;$target\n" | bc | grep -e '^1[^1]*$'
       let $? && {
-        echo "Invalid target, has to be power of two"
+        printf "Invalid target, has to be power of two\n"
         exit -1 
       };;
     h ) help $0
         exit 0;;
     l ) exec 3>$OPTARG;;
-    \?) echo "Invalid option: -"$OPTARG", try $0 -h" >&2
+    \?) printf "Invalid option: -"$opt", try $0 -h\n" >&2
             exit 1;;
-    : ) echo "Option -"$OPTARG" requires an argument, try $0 -h" >&2
+    : ) printf "Option -"$opt" requires an argument, try $0 -h\n" >&2
             exit 1;;
   esac
 done
