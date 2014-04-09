@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#important variables
+# important variables
 declare -ia board    # array that keeps track of game status
 declare -i pieces    # number of pieces present on board
 declare -i score=0   # score variable
@@ -11,11 +11,11 @@ declare -i moves     # stores number of possible moves to determine if player lo
 declare ESC=$'\e'    # escape byte
 declare header="Bash 2048 v1.1 (https://github.com/mydzor/bash2048)"
 
-#default config
+# default config
 declare -i board_size=4
 declare -i target=2048
 
-#for colorizing numbers
+# for colorizing numbers
 declare -a colors
 colors[2]=33         # yellow text
 colors[4]=32         # green text
@@ -33,7 +33,7 @@ exec 3>/dev/null     # no logging by default
 
 trap "end_game 0" INT #handle INT signal
 
-#simplified replacement of seq command
+# simplified replacement of seq command
 function _seq {
   local cur=1
   local max
@@ -249,8 +249,8 @@ END_HELP
 }
 
 
-#parse commandline options
-while getopts "b:t:l:h" opt; do
+# parse commandline options
+while getopts "b:t:l:h:i" opt; do
   case $opt in
     b ) board_size="$OPTARG"
       let '(board_size>=3)&(board_size<=9)' || {
@@ -265,6 +265,10 @@ while getopts "b:t:l:h" opt; do
       };;
     h ) help $0
         exit 0;;
+    i ) echo "Installing bash2048 to /usr/local/games. Enter your password for $USER:"
+        sudo cp $0 /usr/local/games/bash2048
+        echo "Launch bash2048 by typing bash2048 in the command-line."
+        exit 0;;
     l ) exec 3>$OPTARG;;
     \?) printf "Invalid option: -"$opt", try $0 -h\n" >&2
             exit 1;;
@@ -273,7 +277,7 @@ while getopts "b:t:l:h" opt; do
   esac
 done
 
-#init board
+# init board
 let fields_total=board_size*board_size
 let index_max=board_size-1
 for i in $(_seq 0 $fields_total); do board[$i]="0"; done
@@ -288,6 +292,6 @@ while true; do
   first_round=-1
   let pieces==fields_total && {
    check_moves
-   let moves==0 && end_game 0 #lose the game
+   let moves==0 && end_game 0 # lose the game
   }
 done
