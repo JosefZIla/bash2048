@@ -189,6 +189,7 @@ function apply_push {
       done 
     done
   done
+  update_box_board
 }
 
 function check_moves {
@@ -233,6 +234,7 @@ function end_game {
     exit 0
   }
   printf "You have lost, better luck next time.\033[0m\n"
+  tput cnorm
   exit 0
 }
 
@@ -281,10 +283,13 @@ let pieces=0
 generate_piece
 first_round=$last_added
 generate_piece
+clear
 source board.sh
+init_box_board $board_size
+box_board_print $index_max
+update_box_board
 while true; do
   #print_board
-  box_board index_max
   key_react
   let change && generate_piece
   first_round=-1

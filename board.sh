@@ -8,40 +8,22 @@ lines=("═" "─" "═" " ")
 #for colorizing numbers
 declare -a _colors
 _colors[0]="\033[m"
-_colors[2]="\033[33m"			# fg:yellow
-_colors[4]="\033[32m"			# fg:green
-_colors[8]="\033[34m"			# fg:blue
-_colors[16]="\033[36m"			# fg:cyan
-_colors[32]="\033[35m"			# fg:purple
-_colors[64]="\033[43;38m"		# bg:yellow
-_colors[128]="\033[42;38m"		# bg:green
-_colors[256]="\033[43;38m"		# bg:blue
-_colors[512]="\033[46;38m"		# bg:cyan
-_colors[1024]="\033[45;38m"		# bg:purple
-_colors[2048]="\033[41;38m"		# bg:red
+_colors[2]="\033[1;38;5;8;48;5;255m"
+_colors[4]="\033[1;38;245;12;48;5;12m"
+_colors[8]="\033[1;31;48;5;214m"
+_colors[16]="\033[1;39;48;5;202m"
+_colors[32]="\033[1;39;48;5;9m"
+_colors[64]="\033[1;39;48;5;1m"
+_colors[128]="\033[1;30;48;5;11m"
+_colors[256]="\033[1;30;48;5;10m"
+_colors[512]="\033[46;39m"
+_colors[1024]="\033[1;38;5;22;48;5;226m"
+_colors[2048]="\033[1;38;5;244;48;5;228m"
 
 function print_x { # $1: char, $2:repeate
 	for ((l=0; l<$2; l++)); do
 		echo -n "$1";
 	done
-}
-
-function print_value { # $1: row, $2:column, $3:mid_block
-	# TODO: auto center
-	index=$(($1*${board_size}+$2))
-	val=${board[$index]}
-	if [[ "$val" == 0 ]]; then
-		print_x "${lines[3]}" $b_width
-	else
-		printf "${_colors[$val]}"
-		if (($i==$mid_y)); then
-			printf "%${mid_x}d" $val
-			print_x " " $mid_xr
-		else
-			print_x "${lines[3]}" b_width
-		fi
-		printf "${_colors[0]}"
-	fi
 }
 
 function line_printer { # $1: total_columns, $2: field
@@ -54,27 +36,19 @@ function line_printer { # $1: total_columns, $2: field
 	echo "${rcorn[$2]}"
 }
 
-
 function block_printer { # $1: total_columns, $2: field, $3: row
 	for ((i=1; i <= $b_height; i++)); do
 		printf "${lcorn[3]}";
 		for ((j=0; j < $1; j++)); do
-			print_value $3 $j $i
+			print_x "${lines[3]}" $b_width
 			printf "${cross[3]}"
 		done
-		print_value $3 $j $i
+		print_x "${lines[3]}" $b_width
 		echo "${rcorn[3]}"
 	done
 }
 
-function status {
-	printf "pieces: %-9d" "$pieces"
-	printf "target: %-9d" "$target"
-	printf "score: %-9d" "$score"
-	echo
-}
-
-function box_board { # $1: size
+function box_board_print { # $1: size
 	echo "$header"
 	status
 	field=1
@@ -88,11 +62,25 @@ function box_board { # $1: size
 	done
 }
 
+function status {
+	printf "pieces: %-9d" "$pieces"
+	printf "target: %-9d" "$target"
+	printf "score: %-9d" "$score"
+	echo
+}
+
 function update_block { # $1: row, $2: column
-	#index=$(($1*${board_size}+$2))
-	#val=${board[$index]}
-	pow=$(($RANDOM%12))
-	val=$(echo 2^$pow | bc)
+	index=$(($1*${board_size}+$2))
+	val=${board[$index]}
+
+	if [[ $val == "" ]]; then # NOTE: only for test
+		pow=$(($RANDOM%12))
+		val=$(echo 2^$pow | bc)
+	fi
+
+	if [[ $val == 0 ]]; then
+		val=" "
+	fi
 
 	for ((i=1; i <= $b_height; i++)); do
 		# TODO: check differenc while updating
@@ -102,7 +90,7 @@ function update_block { # $1: row, $2: column
 		tput cup $((2+$1*b_height+i+$1)) $((1+b_width*$2+$2))
 		printf "${_colors[$val]}"
 		if (($i==$mid_y)); then
-			printf "%${mid_x}d" $val
+			printf "%${mid_x}s" $val
 			print_x " " $mid_xr
 		else
 			print_x "${lines[3]}" b_width
@@ -111,7 +99,7 @@ function update_block { # $1: row, $2: column
 	done
 }
 
-function update_board {
+function update_box_board {
 	tput cup 1 0
 	status
 	for ((r=0; r < $size; r++)); do
@@ -122,7 +110,8 @@ function update_board {
 	tput cup 23 0
 }
 
-function init {
+function init_box_board { # $1: size
+	size=$1
 	LINES=$(tput lines)
 	b_height=$((LINES/size))
 	if ((b_height*size > LINE-5)); then
@@ -132,24 +121,24 @@ function init {
 	mid_x=$((b_width/2+1))
 	mid_y=$((b_height/2+1))
 	mid_xr=$((b_width-mid_x))
+	tput civis
 }
 
 if [ `basename $0` == "board.sh" ]; then
-	size=4
+	clear
+	s=4
 
 	if [[ $# -eq 1 ]] && (( "$1" > -1 )); then
-		size=$1
+		s=$1
 	fi
 
-	init
-	clear
+	trap "tput cnorm; exit" INT
+
+	init_box_board $s
 	echo -n block_size:$b_height"x"$b_width mid:$mid_x"x"$mid_y lines:$LINES
-	box_board $((size-1))
+	box_board_print $((size-1))
 	while true; do
 		read -sn 1 #-d "" -sn 1
-		update_board
+		update_box_board
 	done
-else
-	size=board_size
-	init
 fi
