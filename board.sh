@@ -99,7 +99,7 @@ function update_block { # $1: row, $2: column
 	done
 }
 
-function update_box_board {
+function box_board_update {
 	tput cup 1 0
 	status
 	for ((r=0; r < $size; r++)); do
@@ -110,7 +110,7 @@ function update_box_board {
 	tput cup 23 0
 }
 
-function init_box_board { # $1: size
+function box_board_init { # $1: size
 	size=$1
 	LINES=$(tput lines)
 	b_height=$((LINES/size))
@@ -134,11 +134,11 @@ if [ `basename $0` == "board.sh" ]; then
 
 	trap "tput cnorm; exit" INT
 
-	init_box_board $s
+	box_board_init $s
 	echo -n block_size:$b_height"x"$b_width mid:$mid_x"x"$mid_y lines:$LINES
 	box_board_print $((size-1))
 	while true; do
 		read -sn 1 #-d "" -sn 1
-		update_box_board
+		box_board_update
 	done
 fi

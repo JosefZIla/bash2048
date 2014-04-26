@@ -189,7 +189,7 @@ function apply_push {
       done 
     done
   done
-  update_box_board
+  box_board_update
 }
 
 function check_moves {
@@ -285,9 +285,9 @@ first_round=$last_added
 generate_piece
 clear
 source board.sh
-init_box_board $board_size
+box_board_init $board_size
 box_board_print $index_max
-update_box_board
+box_board_update
 while true; do
   #print_board
   key_react
