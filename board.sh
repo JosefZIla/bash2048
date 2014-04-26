@@ -121,7 +121,8 @@ function box_board_init { # $1: size
 	mid_x=$((b_width/2+1))
 	mid_y=$((b_height/2+1))
 	mid_xr=$((b_width-mid_x))
-	tput civis
+	tput civis # hide cursor
+	stty -echo # disable output
 }
 
 if [ `basename $0` == "board.sh" ]; then
