@@ -22,7 +22,7 @@ _colors[2048]="\033[45;38m"		# bg:red
 
 function print_x { # $1: char, $2:repeate
 	for ((l=0; l<$2; l++)); do
-		printf "$1";
+		echo -n "$1";
 	done
 }
 
@@ -96,10 +96,14 @@ function init {
 }
 
 if [ `basename $0` == "board.sh" ]; then
-	size=3
+	size=4
+	if (( "$1" > -1 )); then
+		size=$1
+	fi
+
 	init
 	echo $b_height $b_width $mid_x $mid_y $LINES
-	box_board $(($size+1))
+	box_board $(($size-1))
 else
 	size=board_size
 	init
