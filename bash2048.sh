@@ -284,7 +284,7 @@ generate_piece
 source board.sh
 while true; do
   #print_board
-  box_board 3
+  box_board index_max
   key_react
   let change && generate_piece
   first_round=-1

@@ -5,13 +5,6 @@ rcorn=("╗" "╢" "╝" "║")
 cross=("╤" "┼" "╧" "│")
 lines=("═" "─" "═" " ")
 
-
-function get_color { # arg($1:color_code)
-    if [ "$SGR" = "" ] ; then
-		echo "\033[$1;$2m"
-    fi
-}
-
 #for colorizing numbers
 declare -a _colors
 _colors[0]="\033[m"
@@ -27,9 +20,6 @@ _colors[512]="\033[45;38m"		# bg:cyan
 _colors[1024]="\033[45;38m"		# bg:purple
 _colors[2048]="\033[45;38m"		# bg:red
 
-b_height=$(((24/4)-3))
-b_width=$(((24*2/4)-1))
-
 function print_x { # $1: char, $2:repeate
 	for ((l=0; l<$2; l++)); do
 		printf "$1";
@@ -44,9 +34,9 @@ function print_value { # $1: row, $2:column, $3:mid_block
 		print_x "${lines[3]}" $b_width
 	else
 		printf "${_colors[$val]}"
-		if (($i==1)); then
-			printf "%6d" $val
-			print_x " " 5
+		if (($i==$mid_y)); then
+			printf "%${mid_x}d" $val
+			print_x " " $mid_xr
 		else
 			print_x "${lines[3]}" b_width
 		fi
@@ -66,7 +56,7 @@ function line_printer { # $1: total_columns, $2: field
 
 
 function block_printer { # $1: total_columns, $2: field, $3: row
-	for ((i=-1; i < $b_height; i++)); do
+	for ((i=1; i <= $b_height; i++)); do
 		printf "${lcorn[3]}";
 		for ((j=0; j < $1; j++)); do
 			print_value $3 $j $i
@@ -87,17 +77,30 @@ function box_board { # $1: size
 
 	field=1
 	line_printer $1 0
-	for ((r=0; r <= $1; )); do
-		block_printer $1 3 $r
-		line_printer $1 $field
-
-		r=$((r+1))
+	for ((r=0; r <= $1; r++ )); do
 		if (($r == $1)); then
 			field=2
 		fi
+		block_printer $1 3 $r
+		line_printer $1 $field
 	done
 }
 
+function init {
+	LINES=$(tput lines)
+	b_height=$((LINES/size-3))
+	b_width=$((LINES*2/size-1))
+	mid_x=$((b_width/2+1))
+	mid_y=$((b_height/2+1))
+	mid_xr=$((b_width-mid_x))
+}
+
 if [ `basename $0` == "board.sh" ]; then
-	box_board 3
+	size=3
+	init
+	echo $b_height $b_width $mid_x $mid_y $LINES
+	box_board $(($size+1))
+else
+	size=board_size
+	init
 fi
