@@ -107,7 +107,6 @@ function box_board_update {
 			update_block $r $c
 		done
 	done
-	tput cup 23 0
 }
 
 function box_board_init { # $1: size
