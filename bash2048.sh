@@ -281,8 +281,10 @@ let pieces=0
 generate_piece
 first_round=$last_added
 generate_piece
+source board.sh
 while true; do
-  print_board
+  #print_board
+  box_board 3
   key_react
   let change && generate_piece
   first_round=-1
