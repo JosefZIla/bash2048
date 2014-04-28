@@ -18,26 +18,7 @@ declare -i target=2048
 
 exec 3>/dev/null     # no logging by default
 
-trap "end_game 0" INT #handle INT signal
-
-#simplified replacement of seq command
-function _seq {
-  local cur=1
-  local max
-  local inc=1
-  case $# in
-    1) let max=$1;;
-    2) let cur=$1
-       let max=$2;;
-    3) let cur=$1
-       let inc=$2
-       let max=$3;;
-  esac
-  while test $max -ge $cur; do
-    printf "$cur "
-    let cur+=inc
-  done
-}
+trap "end_game 0; exit" INT #handle INT signal
 
 # Generate new piece on the board
 # inputs:
@@ -160,27 +141,20 @@ function key_react {
         D) apply_push left;;
       esac
     }
-  } || {
-    case $REPLY in
-      k) apply_push up;;
-      j) apply_push down;;
-      l) apply_push right;;
-      h) apply_push left;;
-    esac
   }
 }
 
 function end_game {
-  echo "GAME OVER"
-  echo "Your score: $score"
   let $1 && {
     echo "Congratulations you have achieved $target"
     exit
   }
-  echo "You have lost, better luck next time"
+  box_board_terminate
+  tput cup 9 0
+  figlet -c -w $COLUMNS "GAME OVER"
+  tput cup 22 80
   stty echo
   tput cnorm
-  exit
 }
 
 function help {
@@ -225,7 +199,7 @@ if [ `basename $0` == "bash2048.sh" ]; then
 	clear
 	let fields_total=board_size*board_size
 	let index_max=board_size-1
-	for (( i=board_size*board_size; i>= 0; i--)); do
+	for ((i=fields_total; i>= 0; i--)); do
 		board[$i]=0;
 	done
 	let pieces=0

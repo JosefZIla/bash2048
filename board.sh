@@ -5,7 +5,7 @@ rcorn=("╗" "╢" "╝" "║")
 cross=("╤" "┼" "╧" "│")
 lines=("═" "─" "═" " ")
 
-#for colorizing numbers
+# for colorizing numbers
 declare -a _colors
 _colors[0]="\033[m"
 _colors[2]="\033[1;38;5;8;48;5;255m"
@@ -22,11 +22,12 @@ _colors[2048]="\033[1;38;5;244;48;5;228m"
 
 function print_x { # $1: char, $2:repeate
 	for ((l=0; l<$2; l++)); do
-		echo -n "$1";
+		echo -en "$1";
 	done
 }
 
 function line_printer { # $1: total_columns, $2: field
+	printf "%${offset_x}s" " "
 	printf "${lcorn[$2]}";
 	for ((j=0; j < $1; j++)); do
 		print_x "${lines[$2]}" $b_width
@@ -36,15 +37,9 @@ function line_printer { # $1: total_columns, $2: field
 	echo "${rcorn[$2]}"
 }
 
-function block_printer { # $1: total_columns, $2: field, $3: row
+function block_printer { # $1: total_columns
 	for ((i=1; i <= $b_height; i++)); do
-		printf "${lcorn[3]}";
-		for ((j=0; j < $1; j++)); do
-			print_x "${lines[3]}" $b_width
-			printf "${cross[3]}"
-		done
-		print_x "${lines[3]}" $b_width
-		echo "${rcorn[3]}"
+		line_printer $1 3
 	done
 }
 
@@ -52,12 +47,13 @@ function box_board_print { # $1: size
 	echo "$header"
 	status
 	field=1
+	#print_x "\n" $offset_y
 	line_printer $1 0
 	for ((r=0; r <= $1; r++ )); do
 		if (($r == $1)); then
 			field=2
 		fi
-		block_printer $1 3 $r
+		block_printer $1
 		line_printer $1 $field
 	done
 }
@@ -83,11 +79,9 @@ function update_block { # $1: row, $2: column
 	fi
 
 	for ((i=1; i <= $b_height; i++)); do
-		# TODO: check differenc while updating
-		# if [[ "$val" == 0 ]]; then
-		# 	print_x "${lines[3]}" $b_width
-		# else
-		tput cup $((2+$1*b_height+i+$1)) $((1+b_width*$2+$2))
+		# TODO: check difference while updating
+
+		tput cup $((2+$1*b_height+i+$1)) $((1+offset_x+b_width*$2+$2))
 		printf "${_colors[$val]}"
 		if (($i==$mid_y)); then
 			printf "%${mid_x}s" $val
@@ -112,6 +106,7 @@ function box_board_update {
 function box_board_init { # $1: size
 	size=$1
 	LINES=$(tput lines)
+	COLUMNS=$(tput cols)
 	b_height=$((LINES/size))
 	if ((b_height*size > LINE-5)); then
 		b_height=$(((LINES-4-size)/size))
@@ -120,8 +115,20 @@ function box_board_init { # $1: size
 	mid_x=$((b_width/2+1))
 	mid_y=$((b_height/2+1))
 	mid_xr=$((b_width-mid_x))
+
+	offset_x=$((COLUMNS/2-b_width*size/2-3))
+	#offset_y=$((LINES/2-b_height*size/2))
+
+	screen_x=$((2+(b_height+1)*size))
+
 	tput civis # hide cursor
 	stty -echo # disable output
+}
+
+function box_board_terminate {
+	tput cnorm # show cursor
+	stty echo # enable output
+	tput cup $screen_x $COLUMNS
 }
 
 if [ `basename $0` == "board.sh" ]; then
@@ -132,10 +139,15 @@ if [ `basename $0` == "board.sh" ]; then
 		s=$1
 	fi
 
-	trap "tput cnorm; exit" INT
+	trap "box_board_terminate; exit" INT
 
 	box_board_init $s
-	echo -n block_size:$b_height"x"$b_width mid:$mid_x"x"$mid_y lines:$LINES
+
+	echo -n block_size"(h,w)":$b_height","$b_width
+	echo -n mid"(x,y)":$mid_x"x"$mid_y
+	echo -n offset"(x,y)":$offset_x","$offset_y
+	echo -n lines:$LINES column:$COLUMNS
+
 	box_board_print $((size-1))
 	while true; do
 		read -sn 1 #-d "" -sn 1
