@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-declare header="2048 (https://github.com/rhoit/2048bash)"
+declare header="2048 (https://github.com/rhoit/2048)"
 
 #important variables
 declare -i score=0
@@ -262,7 +262,7 @@ for arg do
 done
 
 # init board
-if [ `basename $0` == "bash2048.sh" ]; then
+function main {
 	let N=board_size*board_size
 	let index_max=board_size-1
 
@@ -295,4 +295,6 @@ if [ `basename $0` == "bash2048.sh" ]; then
 			let moves==0 && end_game 0
 		}
 	done
-fi
+}
+
+main
