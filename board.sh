@@ -65,7 +65,7 @@ function status {
 	echo
 }
 
-function update_block { # $1: row, $2: column
+function update_block { # $1: row, $2: column, #TODO: $3: val
 	index=$(($1*${board_size}+$2))
 	val=${board[$index]}
 
@@ -79,8 +79,24 @@ function update_block { # $1: row, $2: column
 	fi
 
 	for ((i=1; i <= $b_height; i++)); do
-		# TODO: check difference while updating
+		tput cup $((2+$1*b_height+i+$1)) $((1+offset_x+b_width*$2+$2))
+		printf "${_colors[$val]}"
+		if (($i==$mid_y)); then
+			printf "%${mid_x}s" $val
+			print_x " " $mid_xr
+		else
+			print_x "${lines[3]}" b_width
+		fi
+		printf "${_colors[0]}"
+	done
+}
 
+function box_board_block_update { # $1: row, $2: column, $3: val
+	if [[ $val == 0 ]]; then
+		val=" "
+	fi
+
+	for ((i=1; i <= $b_height; i++)); do
 		tput cup $((2+$1*b_height+i+$1)) $((1+offset_x+b_width*$2+$2))
 		printf "${_colors[$val]}"
 		if (($i==$mid_y)); then
@@ -117,7 +133,7 @@ function box_board_init { # $1: size
 	mid_xr=$((b_width-mid_x))
 
 	offset_x=$((COLUMNS/2-b_width*size/2-3))
-	#offset_y=$((LINES/2-b_height*size/2))
+	offset_y=$((LINES/2-b_height*size/2))
 
 	screen_x=$((2+(b_height+1)*size))
 
@@ -143,10 +159,10 @@ if [ `basename $0` == "board.sh" ]; then
 
 	box_board_init $s
 
-	echo -n block_size"(h,w)":$b_height","$b_width
-	echo -n mid"(x,y)":$mid_x"x"$mid_y
-	echo -n offset"(x,y)":$offset_x","$offset_y
-	echo -n lines:$LINES column:$COLUMNS
+	echo -n "block_size(hxw):${b_height}x$b_width "
+	echo -n "mid(x,y):($mid_x,$mid_y) "
+	echo -n "offset(x,y):($offset_x,$offset_y) "
+	echo -n "size:${COLUMNS}x$LINES"
 
 	box_board_print $((size-1))
 	while true; do
