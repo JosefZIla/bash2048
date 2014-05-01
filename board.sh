@@ -37,69 +37,36 @@ function line_printer { # $1: total_columns, $2: field
 	echo "${rcorn[$2]}"
 }
 
-function block_printer { # $1: total_columns
-	for ((i=1; i <= $b_height; i++)); do
-		line_printer $1 3
-	done
-}
-
 function box_board_print { # $1: size
 	echo "$header"
 	status
-	field=1
 	#print_x "\n" $offset_y
 	line_printer $1 0
 	for ((r=0; r <= $1; r++ )); do
-		if (($r == $1)); then
-			field=2
-		fi
-		block_printer $1
+		let field=($r == $1)?2:1
+		for ((i=1; i <= $b_height; i++)); do
+			line_printer $1 3
+		done
 		line_printer $1 $field
 	done
 }
 
 function status {
-	printf "pieces: %-9d" "$pieces"
-	printf "target: %-9d" "$target"
+	printf "blocks: %-5d" "$blocks"
+	printf "target: %-5d" "$target"
 	printf "score: %-9d" "$score"
 	echo
 }
 
-function update_block { # $1: row, $2: column, #TODO: $3: val
-	index=$(($1*${board_size}+$2))
-	val=${board[$index]}
-
-	if [[ $val == "" ]]; then # NOTE: only for test
-		pow=$(($RANDOM%12))
-		val=$(echo 2^$pow | bc)
-	fi
-
+function box_board_block_update { # $1: x_position, $2: y_position, $3: val
 	if [[ $val == 0 ]]; then
 		val=" "
 	fi
 
 	for ((i=1; i <= $b_height; i++)); do
-		tput cup $((2+$1*b_height+i+$1)) $((1+offset_x+b_width*$2+$2))
+		tput cup $(($1+i)) $2
 		printf "${_colors[$val]}"
-		if (($i==$mid_y)); then
-			printf "%${mid_x}s" $val
-			print_x " " $mid_xr
-		else
-			print_x "${lines[3]}" b_width
-		fi
-		printf "${_colors[0]}"
-	done
-}
-
-function box_board_block_update { # $1: row, $2: column, $3: val
-	if [[ $val == 0 ]]; then
-		val=" "
-	fi
-
-	for ((i=1; i <= $b_height; i++)); do
-		tput cup $((2+$1*b_height+i+$1)) $((1+offset_x+b_width*$2+$2))
-		printf "${_colors[$val]}"
-		if (($i==$mid_y)); then
+		if (( i == mid_y )); then
 			printf "%${mid_x}s" $val
 			print_x " " $mid_xr
 		else
@@ -114,7 +81,13 @@ function box_board_update {
 	status
 	for ((r=0; r < $size; r++)); do
 		for ((c=0; c < $size; c++)); do
-			update_block $r $c
+			local x=$((2+r*b_height+$r))
+			local y=$((1+offset_x+b_width*c+c))
+
+			index=$(($r*$size+$c))
+			val=${board[index]}
+
+			box_board_block_update $x $y $val
 		done
 	done
 }
@@ -124,16 +97,18 @@ function box_board_init { # $1: size
 	LINES=$(tput lines)
 	COLUMNS=$(tput cols)
 	b_height=$((LINES/size))
+
 	if ((b_height*size > LINE-5)); then
 		b_height=$(((LINES-4-size)/size))
 	fi
-	b_width=$((b_height*2+3))
-	mid_x=$((b_width/2+1))
-	mid_y=$((b_height/2+1))
-	mid_xr=$((b_width-mid_x))
 
-	offset_x=$((COLUMNS/2-b_width*size/2-3))
-	offset_y=$((LINES/2-b_height*size/2))
+	let b_width=b_height*2+3
+	let mid_x=b_width/2+1
+	let mid_y=b_height/2+1
+	let mid_xr=b_width-mid_x
+
+	let offset_x=COLUMNS/2-b_width*size/2-3
+	let offset_y=LINES/2-b_height*size/2
 
 	screen_x=$((2+(b_height+1)*size))
 
@@ -148,7 +123,6 @@ function box_board_terminate {
 }
 
 if [ `basename $0` == "board.sh" ]; then
-	clear
 	s=4
 
 	if [[ $# -eq 1 ]] && (( "$1" > -1 )); then
@@ -158,15 +132,22 @@ if [ `basename $0` == "board.sh" ]; then
 	trap "box_board_terminate; exit" INT
 
 	box_board_init $s
-
+	clear
 	echo -n "block_size(hxw):${b_height}x$b_width "
 	echo -n "mid(x,y):($mid_x,$mid_y) "
 	echo -n "offset(x,y):($offset_x,$offset_y) "
 	echo -n "size:${COLUMNS}x$LINES"
 
-	box_board_print $((size-1))
+	box_board_print $((s-1))
+	let N=s*s-1
+
+	declare -ia board
 	while true; do
-		read -sn 1 #-d "" -sn 1
+		for ((i=N; i>= 0; i--)); do
+			let pow=$RANDOM%12
+			board[$i]=$(echo 2^$pow | bc)
+		done
 		box_board_update
+		read -sn 1 #-d "" -sn 1
 	done
 fi
