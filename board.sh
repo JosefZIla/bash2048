@@ -52,9 +52,10 @@ function box_board_print { # $1: size
 }
 
 function status {
-	printf "blocks: %-5d" "$blocks"
-	printf "target: %-5d" "$target"
+	printf "target: %-9d" "$target"
+	printf "blocks: %-9d" "$blocks"
 	printf "score: %-9d" "$score"
+	printf "moves: %-9d" "$moves"
 	echo
 }
 

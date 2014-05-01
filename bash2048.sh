@@ -3,10 +3,9 @@
 declare header="2048 (https://github.com/rhoit/2048bash)"
 
 #important variables
-declare -ia board
 declare -i score=0
 
-declare -i pieces    # number of pieces present on board
+declare -i blocks    # number of blocks present on board
 declare -i flag_skip # flag that prevents doing more than one operation on single field in one step
 declare -i moves     # stores number of possible moves to determine if player lost the game
 declare ESC=$'\e'    # escape byte
@@ -21,18 +20,16 @@ trap "end_game 0; exit" INT #handle INT signalp
 
 function generate_piece {
 	while true; do
-		let pos=RANDOM%fields_total
+		let pos=RANDOM%N
 		let board[$pos] || {
-			let value=RANDOM%10?2:4
-			board[$pos]=$value
-			last_added=$pos
+			let board[$pos]=RANDOM%10?2:4
 			break;
 		}
 	done
-	let pieces++
+	let blocks++
 }
 
-# perform push operation between two pieces
+# perform push operation between two blocks
 # inputs:
 #         $1 - push position, for horizontal push this is row, for vertical column
 #         $2 - recipient piece, this will hold result if moving or joining
@@ -45,7 +42,7 @@ function generate_piece {
 #         $flag_skip - indicates that recipient piece cannot be modified further
 #         $board     - new state of the game board
 
-function push_pieces { #  $1: push position
+function push_blocks { #  $1: push position
 	case $4 in
 		u) let first=$2*board_size+$1;
 		   let second=($2+$3)*board_size+$1;;
@@ -78,7 +75,7 @@ function push_pieces { #  $1: push position
       let board[$first]*=2
       let "board[$first]==$target" && end_game 1
       let board[$second]=0
-      let pieces-=1
+      let blocks-=1
       let change=1
       let score+=${board[$first]}
       printf "joined piece from [$second] with [$first], new value=${board[$first]}\n" >&3
@@ -95,44 +92,102 @@ function apply_push { # $1: direction; $2: mode
 			let increment_max=index_max-j
 			for ((k=1; k <= $increment_max; k++)); do
 				let flag_skip && break
-				push_pieces $i $j $k $1 $2
+				push_blocks $i $j $k $1 $2
 			done
 		done
 	done
-	box_board_update
 }
 
-function apply_pushup {
+function apply_push_up {
+	# TODO: win case
 	for ((j=0; j < $board_size; j++)); do
 		drag=0
-		for ((i=0; i < $index_max; i++)); do
+		for ((i=0; i < $board_size; i++)); do
 			let i1=i*board_size+j
 			let ${board[i1]} || { let drag+=1; continue; }
-			let i2=(i+1)*board_size+j
+			let total=board[i1]
 
-			let i3=(i-drag)*board_size+j
-			if (( ${board[i1]} == ${board[i2]} )); then
-				let total=board[$i1]+board[$i2]
-				let board[i1]=0
+			let i2=i1+board_size
+
+			# max_row + 1 is blank, thats why string comparision
+			if [[ "${board[i1]}" == "${board[i2]}" ]]; then
+				let total*=2
 				let board[i2]=0
-				let board[i3]=$total
-			else
-				let total=board[i1]
-				let board[i1]=0
-				let board[i3]=total
+			elif (( drag == 0 )); then
+				continue;
 			fi
-		done
 
-		if (( $drag )); then
-			let i2=i*board_size+j
-			let i3=(i-drag)*board_size+j
-			let total=board[i2]
-			let board[i2]=0
+			if (( drag < i )); then
+				let i4=i1-board_size*drag-board_size
+				if [[ "${board[i1]}" == "${board[i4]}" ]]; then
+					let board[i4]*=2
+					let board[i1]=0
+					let change++
+					let blocks--
+					continue
+				fi
+			fi
+
+			let board[i1]=0
+			let i3=i1-board_size*drag
 			let board[i3]=total
-		fi
+			let change++
+			let blocks--
+		done
 	done
+}
 
-	box_board_update
+function apply_push_dn {
+	# u=(0 $board_size 0 j)
+	# d=(0)
+	# l=(0)
+	# r=(0)
+
+	#let j_beg=board_index-1
+    # j_end=0
+	#j_dif=-1
+	let i_beg=board_size-1
+    i_end=-1
+	i_dif=-1
+
+	# for ((j=j_beg; j < j_end; j+=j_dif)); do
+
+	j=0
+		drag=0
+		for ((i=i_beg; i != i_end; i+=i_dif)); do
+			let i1=i*board_size+j
+			let ${board[i1]} || { let drag+=-1; continue; }
+			let total=board[i1]
+
+			i2=i1-board_size
+
+			# max_row + 1 is blank, thats why string comparision
+			if [[ "${board[i1]}" == "${board[i2]}" ]]; then
+				let total+=board[$i2]
+				let board[i2]=0
+			elif (( drag == 0 )); then
+				continue;
+			fi
+
+			let board[i1]=0
+
+			if (( drag < i )); then
+				let i4=i1-board_size*drag+board_size
+				#echo drag=$drag, i=$i, i1=$i1, i4=$i4
+				if [[ "$total" == "${board[i4]}" ]]; then
+					let board[$i4]+=total
+					let change++
+					let blocks--
+					continue
+				fi
+			fi
+
+			let i3=i1-board_size*drag
+			let board[i3]=total
+			let change++
+			let blocks--
+		done
+	# done
 }
 
 function check_moves {
@@ -144,14 +199,13 @@ function check_moves {
 }
 
 function key_react {
-  let change=0
   read -d '' -sn 1
   test "$REPLY" = "$ESC" && {
     read -d '' -sn 1 -t1
     test "$REPLY" = "[" && {
       read -d '' -sn 1 -t1
       case $REPLY in
-        A) apply_pushup u;;
+        A) apply_push_up u;;
         B) apply_push d;;
         C) apply_push r;;
         D) apply_push l;;
@@ -209,28 +263,36 @@ done
 
 # init board
 if [ `basename $0` == "bash2048.sh" ]; then
-	clear
-	let fields_total=board_size*board_size
+	let N=board_size*board_size
 	let index_max=board_size-1
-	for ((i=fields_total; i>= 0; i--)); do
-		board[$i]=0;
+
+	declare -ia board
+	for ((i=N-1; i>= 0; i--)); do
+		board[$i]=0
 	done
-	let pieces=0
+
+	let blocks=0
 	generate_piece
-	first_round=$last_added
 	generate_piece
+
+	#board[0]=2
+	#board[4]=2
+	#board[8]=2
+	#board[12]=2
+
 	source board.sh
 	box_board_init $board_size
+	clear
 	box_board_print $index_max
-	box_board_update
+
 	while true; do
-		#print_board
+		change=0
+		box_board_update
 		key_react
 		let change && generate_piece
-		first_round=-1
-		let pieces==fields_total && {
+		let blocks==N && { # TODO: from apply push
 			check_moves
-			let moves==0 && end_game 0 #lose the game
+			let moves==0 && end_game 0
 		}
 	done
 fi
