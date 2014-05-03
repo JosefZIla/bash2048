@@ -5,20 +5,18 @@ rcorn=("╗" "╢" "╝" "║")
 cross=("╤" "┼" "╧" "│")
 lines=("═" "─" "═" " ")
 
-# for colorizing numbers
-declare -a _colors
 _colors[0]="\033[m"
-_colors[2]="\033[1;38;5;8;48;5;255m"
-_colors[4]="\033[1;38;245;12;48;5;12m"
-_colors[8]="\033[1;31;48;5;214m"
-_colors[16]="\033[1;39;48;5;202m"
+_colors[2]="\033[1;39;48;5;12m"
+_colors[4]="\033[1;33;48;5;24m"
+_colors[8]="\033[1;38;5;227;48;5;202m"
+_colors[16]="\033[1;39;48;5;208m"
 _colors[32]="\033[1;39;48;5;9m"
 _colors[64]="\033[1;39;48;5;1m"
-_colors[128]="\033[1;30;48;5;11m"
-_colors[256]="\033[1;30;48;5;10m"
-_colors[512]="\033[46;39m"
+_colors[128]="\033[46;39m"
+_colors[256]="\033[48;5;27;39m"
+_colors[512]="\033[1;38;5;9;48;5;11m"
 _colors[1024]="\033[1;38;5;22;48;5;226m"
-_colors[2048]="\033[1;38;5;244;48;5;228m"
+_colors[2048]="\033[1;38;5;8;48;5;237m"
 
 function print_x { # $1: char, $2:repeate
 	for ((l=0; l<$2; l++)); do
@@ -38,7 +36,7 @@ function line_printer { # $1: total_columns, $2: field
 }
 
 function box_board_print { # $1: size
-	echo "$header"
+	echo -e "$header"
 	status
 	#print_x "\n" $offset_y
 	line_printer $1 0
@@ -59,8 +57,35 @@ function status {
 	echo
 }
 
+source font.sh
 function box_board_block_update { # $1: x_position, $2: y_position, $3: val
-	if [[ $val == 0 ]]; then
+	case $3 in
+		2) two ;;
+		4) four ;;
+		8) eight;;
+		16) sixteen;;
+		32) thirtytwo;;
+		64) sixtyfour;;
+		128) onetwoeight;;
+		256) twofivesix;;
+		512) fiveonetwo;;
+		1024) onezerotwofour;;
+		2048) twozerofoureight;;
+		*) box_board_block_update2 $1 $2 $3; return;;
+	esac
+
+	printf "${_colors[$3]}"
+	for ((i=0; i < $b_height; i++)); do
+		tput cup $(($1+i+1)) $2
+		printf "${word[i]}"
+	done
+	printf "${_colors[0]}"
+}
+
+
+function box_board_block_update2 { # $1: x_position, $2: y_position, $3: val
+	val=$3
+	if [[ "$val" == 0 ]]; then
 		val=" "
 	fi
 
@@ -145,7 +170,7 @@ if [ `basename $0` == "board.sh" ]; then
 	declare -ia board
 	while true; do
 		for ((i=N; i>= 0; i--)); do
-			let pow=$RANDOM%12
+			let pow=RANDOM%12
 			board[$i]=$(echo 2^$pow | bc)
 		done
 		box_board_update

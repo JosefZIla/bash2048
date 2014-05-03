@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-declare header="2048 (https://github.com/rhoit/2048)"
+header="2048 (https://github.com/rhoit/2048)"
 
 #important variables
 declare -i score=0
@@ -113,6 +113,7 @@ function apply_push_up {
 			if [[ "${board[i1]}" == "${board[i2]}" ]]; then
 				let total*=2
 				let board[i2]=0
+				let blocks--
 			elif (( drag == 0 )); then
 				continue;
 			fi
@@ -122,8 +123,8 @@ function apply_push_up {
 				if [[ "${board[i1]}" == "${board[i4]}" ]]; then
 					let board[i4]*=2
 					let board[i1]=0
-					let change++
 					let blocks--
+					let change++
 					continue
 				fi
 			fi
@@ -132,62 +133,49 @@ function apply_push_up {
 			let i3=i1-board_size*drag
 			let board[i3]=total
 			let change++
-			let blocks--
 		done
 	done
 }
 
 function apply_push_dn {
-	# u=(0 $board_size 0 j)
-	# d=(0)
-	# l=(0)
-	# r=(0)
-
-	#let j_beg=board_index-1
-    # j_end=0
-	#j_dif=-1
 	let i_beg=board_size-1
     i_end=-1
 	i_dif=-1
-
-	# for ((j=j_beg; j < j_end; j+=j_dif)); do
-
-	j=0
+	for ((j=0; j < board_size; j++)); do
 		drag=0
 		for ((i=i_beg; i != i_end; i+=i_dif)); do
 			let i1=i*board_size+j
-			let ${board[i1]} || { let drag+=-1; continue; }
+			let ${board[i1]} || { let drag+=1; continue; }
 			let total=board[i1]
 
-			i2=i1-board_size
+			let i2=i1-board_size
 
 			# max_row + 1 is blank, thats why string comparision
 			if [[ "${board[i1]}" == "${board[i2]}" ]]; then
-				let total+=board[$i2]
+				let total*=2
 				let board[i2]=0
+				let blocks--
 			elif (( drag == 0 )); then
 				continue;
 			fi
 
-			let board[i1]=0
-
 			if (( drag < i )); then
-				let i4=i1-board_size*drag+board_size
-				#echo drag=$drag, i=$i, i1=$i1, i4=$i4
+				let i4=i1+board_size*drag+board_size
 				if [[ "$total" == "${board[i4]}" ]]; then
-					let board[$i4]+=total
-					let change++
+					let board[$i4]*=2
+					let board[i1]=0
 					let blocks--
+					let change++
 					continue
 				fi
 			fi
 
-			let i3=i1-board_size*drag
+			let board[i1]=0
+			let i3=i1+board_size*drag
 			let board[i3]=total
 			let change++
-			let blocks--
 		done
-	# done
+	done
 }
 
 function check_moves {
@@ -206,7 +194,7 @@ function key_react {
       read -d '' -sn 1 -t1
       case $REPLY in
         A) apply_push_up u;;
-        B) apply_push d;;
+        B) apply_push_dn d;;
         C) apply_push r;;
         D) apply_push l;;
       esac
