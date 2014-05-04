@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 header="2048 (https://github.com/rhoit/2048)"
+source board.sh
 
 #important variables
 declare -i score=0
@@ -27,6 +28,15 @@ function generate_piece {
 		}
 	done
 	let blocks++
+
+	# just for some delay effects
+	local r=$((pos/4))
+	local c=$((pos-r*4))
+	local val=${board[pos]}
+	local c_temp=${_colors[val]}
+	_colors[$val]="\033[48;5;15m"
+	box_board_block_update $r $c
+	_colors[$val]=$c_temp
 }
 
 # perform push operation between two blocks
@@ -268,7 +278,6 @@ function main {
 	#board[8]=2
 	#board[12]=2
 
-	source board.sh
 	box_board_init $board_size
 	clear
 	box_board_print $index_max
@@ -277,7 +286,11 @@ function main {
 		change=0
 		box_board_update
 		key_react
-		let change && generate_piece
+
+		let change && {
+			generate_piece;
+			sleep .01
+		}
 		let blocks==N && { # TODO: from apply push
 			check_moves
 			let moves==0 && end_game 0

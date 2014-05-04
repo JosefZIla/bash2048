@@ -6,8 +6,8 @@ cross=("╤" "┼" "╧" "│")
 lines=("═" "─" "═" " ")
 
 _colors[0]="\033[m"
-_colors[2]="\033[1;39;48;5;12m"
-_colors[4]="\033[1;33;48;5;24m"
+_colors[2]="\033[1;33;48;5;24m"
+_colors[4]="\033[1;39;48;5;12m"
 _colors[8]="\033[1;38;5;227;48;5;202m"
 _colors[16]="\033[1;39;48;5;208m"
 _colors[32]="\033[1;39;48;5;9m"
@@ -58,7 +58,7 @@ function status {
 }
 
 source font.sh
-function box_board_block_update { # $1: x_position, $2: y_position, $3: val
+function block_update { # $1: x_position, $2: y_position, $3: val
 	case $3 in
 		2) two ;;
 		4) four ;;
@@ -71,7 +71,7 @@ function box_board_block_update { # $1: x_position, $2: y_position, $3: val
 		512) fiveonetwo;;
 		1024) onezerotwofour;;
 		2048) twozerofoureight;;
-		*) box_board_block_update2 $1 $2 $3; return;;
+		*) block_update2 $1 $2 $3; return;;
 	esac
 
 	printf "${_colors[$3]}"
@@ -82,8 +82,19 @@ function box_board_block_update { # $1: x_position, $2: y_position, $3: val
 	printf "${_colors[0]}"
 }
 
+function box_board_block_update { # $1: row, $2: column
+	local r=$1
+	local c=$2
+	local x=$((2+r*b_height+$r))
+	local y=$((1+offset_x+b_width*c+c))
 
-function box_board_block_update2 { # $1: x_position, $2: y_position, $3: val
+	local index=$(($r*$size+$c))
+	local val=${board[index]}
+
+	block_update $x $y $val
+}
+
+function block_update2 { # $1: x_position, $2: y_position, $3: val
 	val=$3
 	if [[ "$val" == 0 ]]; then
 		val=" "
@@ -107,13 +118,7 @@ function box_board_update {
 	status
 	for ((r=0; r < $size; r++)); do
 		for ((c=0; c < $size; c++)); do
-			local x=$((2+r*b_height+$r))
-			local y=$((1+offset_x+b_width*c+c))
-
-			index=$(($r*$size+$c))
-			val=${board[index]}
-
-			box_board_block_update $x $y $val
+			box_board_block_update $r $c
 		done
 	done
 }
