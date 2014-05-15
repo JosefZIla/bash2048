@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source font.sh
+
 lcorn=("╔" "╟" "╚" "║")
 rcorn=("╗" "╢" "╝" "║")
 cross=("╤" "┼" "╧" "│")
@@ -57,8 +59,7 @@ function status {
 	echo
 }
 
-source font.sh
-function block_update { # $1: x_position, $2: y_position, $3: val
+function font_map { # $1: x_position, $2: y_position, $3: val
 	case $3 in
 		2) two ;;
 		4) four ;;
@@ -80,6 +81,14 @@ function block_update { # $1: x_position, $2: y_position, $3: val
 		printf "${word[i]}"
 	done
 	printf "${_colors[0]}"
+}
+
+function block_update { # $1: x_position, $2: y_position, $3: val
+	if [[ $FONT_SH == "1" ]]; then
+		font_map $1 $2 $3;
+		return
+	fi
+	block_update2 $1 $2 $3;
 }
 
 function box_board_block_update { # $1: row, $2: column
@@ -163,22 +172,23 @@ if [ `basename $0` == "board.sh" ]; then
 	trap "box_board_terminate; exit" INT
 
 	box_board_init $s
+
 	clear
+	box_board_print $((s-1))
+	tput cup 0 0
 	echo -n "block_size(hxw):${b_height}x$b_width "
 	echo -n "mid(x,y):($mid_x,$mid_y) "
 	echo -n "offset(x,y):($offset_x,$offset_y) "
 	echo -n "size:${COLUMNS}x$LINES"
 
-	box_board_print $((s-1))
 	let N=s*s-1
 
 	declare -ia board
-	while true; do
-		for ((i=N; i>= 0; i--)); do
-			let pow=RANDOM%12
-			board[$i]=$(echo 2^$pow | bc)
-		done
-		box_board_update
-		read -sn 1 #-d "" -sn 1
+
+	for ((i=N; i>= 0; i--)); do
+		board[$i]=$(echo 2^$i | bc)
 	done
+
+	box_board_update
+	box_board_terminate
 fi

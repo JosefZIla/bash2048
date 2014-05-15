@@ -2,6 +2,8 @@
 
 # for colorizing numbers
 
+FONT_SH=1
+
 c0="\033[1;m"
 c1="\033[1;31m"
 c2="\033[1;38;5;22m"
@@ -56,7 +58,7 @@ function thirtytwo {
 }
 
 function sixtyfour {
-	word[0]=" ▗▄▄▖   ▄▆ "
+	word[0]=" ▗▄▄▖   ▄▄ "
 	word[1]=" █▄▄  ▄▀ █ "
 	word[2]=" █  █▝▀▀▀█▘"
 	word[3]="  ▀▀     ▀ "
