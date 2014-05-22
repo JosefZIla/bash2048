@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source font.sh
+source $WD/font.sh
 
 lcorn=("╔" "╟" "╚" "║")
 rcorn=("╗" "╢" "╝" "║")
@@ -147,8 +147,10 @@ function box_board_init { # $1: size
 	let mid_y=b_height/2+1
 	let mid_xr=b_width-mid_x
 
+	let screen_mid=LINES/2
 	let offset_x=COLUMNS/2-b_width*size/2-3
-	let offset_y=LINES/2-b_height*size/2
+	let offset_y=screen_mid-b_height*size/2
+	let offset_figlet_y=screen_mid-3
 
 	screen_x=$((2+(b_height+1)*size))
 

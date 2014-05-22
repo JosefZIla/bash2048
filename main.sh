@@ -40,16 +40,21 @@ done
 #----------------------------------------------------------------------
 # late loading
 
+WD="$(dirname $0)"
+PRG="$(basename $0)"
+
 header="2048 (https://github.com/rhoit/2048)"
-source board.sh
+export WD
+source $WD/board.sh
 
 declare -i score=0
 declare ESC=$'\e' # escape byte
 
-#exec 3>/dev/null     # no logging by default
+#exec 3>/dev/null # no logging by default
 #printf "debug mode on" >&3
 
-trap "end_game 0; exit" INT #handle INT signalp
+won_flag=0
+trap "end_game 0; exit" INT #handle INT signal
 
 function generate_piece {
 	while true; do
@@ -82,11 +87,11 @@ function generate_piece {
 
 function push_blocks {
 	case $4 in
-		u) let first=$2*board_size+$1;
-		   let second=($2+$3)*board_size+$1;;
-		d) let first=(index_max-$2)*board_size+$1;
-		   let second=(index_max-$2-$3)*board_size+$1;;
-		l) let first=$1*board_size+$2;
+		u) let "first=$2*board_size+$1";
+		   let "second=($2+$3)*board_size+$1";;
+		d) let "first=(index_max-$2)*board_size+$1";
+		   let "second=(index_max-$2-$3)*board_size+$1";;
+		l) let "first=$1*board_size+$2";
 		   let "second=$1*$board_size+($2+$3)";;
 		r) let "first=$1*$board_size+(index_max-$2)";
 		   let "second=$1*$board_size+(index_max-$2-$3)";;
@@ -109,7 +114,7 @@ function push_blocks {
 	let "${board[$first]}==${board[second]}" && {
 		if test -z $5; then
 			let board[$first]*=2
-			let "board[$first]==$target" && end_game 1
+			let "board[$first]==$target" && won_flag=1
 			let board[$second]=0
 			let blocks-=1
 			let change=1
@@ -131,6 +136,7 @@ function apply_push { # $1: direction; $2: mode
 			done
 		done
 	done
+	let won_flag && end_game 1
 }
 
 function check_moves {
@@ -158,16 +164,17 @@ function key_react {
 }
 
 function end_game {
-	let $1 && {
-		echo "Congratulations you have achieved $target"
-		exit
-	}
-	box_board_terminate
+	if (( $1 == 1 )); then
+		# TODO: get stty and dump for blink
+		box_board_update
+		status="YOU WIN"
+	else
+		status="GAME OVER"
+	fi
+
 	# TODO: remove figlet dependencies
-	tput cup 9 0; figlet -c -w $COLUMNS "GAME OVER"
-	tput cup 22 80
-	stty echo
-	tput cnorm
+	tput cup $offset_figlet_y 0; figlet -c -w $COLUMNS $status
+	box_board_terminate
 	exit
 }
 
@@ -182,10 +189,10 @@ function main {
 
 	let blocks=0
 
-	#board[0]=2
-	#board[4]=2
-	#board[8]=2
-	#board[12]=2
+	# board[0]=1024
+	# board[4]=1024
+
+	# board[12]=2
 
 	box_board_init $board_size
 	clear
