@@ -57,14 +57,14 @@ won_flag=0
 trap "end_game 0; exit" INT #handle INT signal
 
 function generate_piece {
-	while true; do
+	while (( blocks < N )); do
 		let pos=RANDOM%N
 		let board[$pos] || {
 			let board[$pos]=RANDOM%10?2:4
+			let blocks++
 			break;
 		}
 	done
-	let blocks++
 	change=1
 
 	# just for some delay effects
@@ -75,6 +75,7 @@ function generate_piece {
 	_colors[$val]="\033[48;5;15m"
 	box_board_block_update $r $c
 	_colors[$val]=$c_temp
+
 }
 
 # perform push operation between two blocks
@@ -182,16 +183,15 @@ function main {
 	let N=board_size*board_size
 	let index_max=board_size-1
 
+	let blocks=0
 	declare -ia board
-	for ((i=N-1; i>= 0; i--)); do
-		board[$i]=0
+	for ((i=0; i < N; i++)); do
+		board[$i]=0 #2048
+		#let blocks++
 	done
 
-	let blocks=0
-
-	# board[0]=1024
-	# board[4]=1024
-
+	# board[0]=0
+	# board[4]=0
 	# board[12]=2
 
 	box_board_init $board_size
