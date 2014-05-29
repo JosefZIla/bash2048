@@ -47,7 +47,8 @@ header="2048 (https://github.com/rhoit/2048)"
 export WD
 source $WD/board.sh
 
-declare -i score=0
+declare score=0
+declare moves=0
 declare ESC=$'\e' # escape byte
 
 #exec 3>/dev/null # no logging by default
@@ -105,7 +106,7 @@ function push_blocks {
 				let board[$second]=0
 				let change=1
 			else
-				let moves++
+				let next_mov++
 			fi
 		}
 		return
@@ -115,13 +116,13 @@ function push_blocks {
 	let "${board[$first]}==${board[second]}" && {
 		if test -z $5; then
 			let board[$first]*=2
-			let "board[$first]==$target" && won_flag=1
+			let "board[$first]==$target" && let won_flag++
 			let board[$second]=0
 			let blocks-=1
 			let change=1
 			let score+=${board[$first]}
 		else
-			let moves++
+			let next_mov++
 		fi
 	}
 }
@@ -137,15 +138,18 @@ function apply_push { # $1: direction; $2: mode
 			done
 		done
 	done
-	let won_flag && end_game 1
+	if (( $won_flag > 0)); then
+		end_game 1
+	fi
 }
 
 function check_moves {
-	let moves=0
+	next_mov=0
 	apply_push u fake
 	apply_push d fake
 	apply_push l fake
 	apply_push r fake
+	let next_mov==0 && end_game 0
 }
 
 function key_react {
@@ -165,16 +169,26 @@ function key_react {
 }
 
 function end_game {
+	# TODO: remove figlet dependencies
 	if (( $1 == 1 )); then
-		# TODO: get stty and dump for blink
 		box_board_update
-		status="YOU WIN"
+		status="YOU WON"
+		tput cup $offset_figlet_y 0; figlet -c -w $COLUMNS $status
+		tput cup $LINES 0;
+		echo -n "Want to keep on going (Y/N): "
+		read -d '' -sn 1 result
+		if [[ $result != 'n' && $result != 'N' ]]; then
+			echo -n "Y"
+			let won_flag=-100
+			tput cup 0 0
+			box_board_print $index_max
+			return
+		fi
 	else
 		status="GAME OVER"
+		tput cup $offset_figlet_y 0; figlet -c -w $COLUMNS $status
 	fi
 
-	# TODO: remove figlet dependencies
-	tput cup $offset_figlet_y 0; figlet -c -w $COLUMNS $status
 	box_board_terminate
 	exit
 }
@@ -184,10 +198,9 @@ function main {
 	let index_max=board_size-1
 
 	let blocks=0
-	declare -ia board
 	for ((i=0; i < N; i++)); do
-		board[$i]=0 #2048
-		#let blocks++
+		let board[i]=0 #$i%3?0:1024
+		# let board[i] && let blocks++
 	done
 
 	# board[0]=0
@@ -204,15 +217,12 @@ function main {
 			generate_piece
 			box_board_update
 			change=0
+			let moves++
 			#sleep .01 &
 		} #<&-
 
 		key_react # before end game check, so player can see last board state
-
-		let blocks==N && {
-			check_moves
-			let moves==0 && end_game 0
-		}
+		let blocks==N && check_moves
 	done
 }
 
