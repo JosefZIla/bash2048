@@ -63,19 +63,18 @@ function generate_piece {
 		let board[index] || {
 			local val=$((RANDOM%10?2:4))
 			let blocks++
+			change=1
+			# just for some delay effects/invert color
+			local r=$((index/board_size))
+			local c=$((index-r*board_size))
+			local c_temp=${_colors[val]}
+			_colors[$val]="\033[30;48;5;15m"
+			box_board_block_update $r $c $val
+			_colors[$val]=$c_temp
+			let board[index]=val
 			break;
 		}
 	done
-	change=1
-
-	# just for some delay effects/invert color
-	local r=$((index/board_size))
-	local c=$((index-r*board_size))
-	local c_temp=${_colors[val]}
-	_colors[$val]="\033[30;48;5;15m"
-	box_board_block_update $r $c $val
-	_colors[$val]=$c_temp
-	let board[index]=val
 }
 
 # perform push operation between two blocks
