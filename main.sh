@@ -2,7 +2,7 @@
 
 # variables
 declare -i board_size=4
-declare -i target=2048
+target=2048
 
 function Usage {
     echo -e "Usage:  2048 [OPTIONS]";
@@ -59,24 +59,23 @@ trap "end_game 0; exit" INT #handle INT signal
 
 function generate_piece {
 	while (( blocks < N )); do
-		let pos=RANDOM%N
-		let board[$pos] || {
-			let board[$pos]=RANDOM%10?2:4
+		let index=RANDOM%N
+		let board[index] || {
+			local val=$((RANDOM%10?2:4))
 			let blocks++
 			break;
 		}
 	done
 	change=1
 
-	# just for some delay effects
-	local r=$((pos/4))
-	local c=$((pos-r*4))
-	local val=${board[pos]}
+	# just for some delay effects/invert color
+	local r=$((index/board_size))
+	local c=$((index-r*board_size))
 	local c_temp=${_colors[val]}
-	_colors[$val]="\033[48;5;15m"
-	box_board_block_update $r $c
+	_colors[$val]="\033[30;48;5;15m"
+	box_board_block_update $r $c $val
 	_colors[$val]=$c_temp
-
+	let board[index]=val
 }
 
 # perform push operation between two blocks
@@ -116,7 +115,7 @@ function push_blocks {
 	let "${board[$first]}==${board[second]}" && {
 		if test -z $5; then
 			let board[$first]*=2
-			let "board[$first]==$target" && let won_flag++
+			test "${board[first]}" = "$target" && won_flag=1
 			let board[$second]=0
 			let blocks-=1
 			let change=1
@@ -138,9 +137,7 @@ function apply_push { # $1: direction; $2: mode
 			done
 		done
 	done
-	if (( $won_flag > 0)); then
-		end_game 1
-	fi
+	let won_flag && end_game 1
 }
 
 function check_moves {
@@ -176,12 +173,14 @@ function end_game {
 		tput cup $offset_figlet_y 0; figlet -c -w $COLUMNS $status
 		tput cup $LINES 0;
 		echo -n "Want to keep on going (Y/N): "
-		read -d '' -sn 1 result
+		read -d '' -sn 1 result > /dev/null
 		if [[ $result != 'n' && $result != 'N' ]]; then
 			echo -n "Y"
-			let won_flag=-100
+			target="∞"
+			won_flag=0
 			tput cup 0 0
 			box_board_print $index_max
+			unset old_board
 			return
 		fi
 	else

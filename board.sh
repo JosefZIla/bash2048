@@ -52,10 +52,10 @@ function box_board_print { # $1: size
 }
 
 function status {
-	printf "target: %-9d" "$target"
 	printf "blocks: %-9d" "$blocks"
 	printf "score: %-9d" "$score"
 	printf "moves: %-9d" "$moves"
+	printf "target: %-9s" "$target"
 	echo
 }
 
@@ -91,16 +91,14 @@ function block_update { # $1: x_position, $2: y_position, $3: val
 	block_update2 $1 $2 $3;
 }
 
-function box_board_block_update { # $1: row, $2: column
+function box_board_block_update { # $1: row, $2: column, $3: val
 	local r=$1
 	local c=$2
+
 	local x=$((2+r*b_height+$r))
 	local y=$((1+offset_x+b_width*c+c))
 
-	local index=$(($r*$size+$c))
-	local val=${board[index]}
-
-	block_update $x $y $val
+	block_update $x $y $3
 }
 
 function block_update2 { # $1: x_position, $2: y_position, $3: val
@@ -125,9 +123,14 @@ function block_update2 { # $1: x_position, $2: y_position, $3: val
 function box_board_update {
 	tput cup 1 0
 	status
+	local index=0
 	for ((r=0; r < $size; r++)); do
 		for ((c=0; c < $size; c++)); do
-			box_board_block_update $r $c
+			if [[ ${old_board[index]} != ${board[index]} ]]; then
+				box_board_block_update $r $c ${board[index]}
+			fi
+			old_board[$index]=${board[index]}
+			let index++
 		done
 	done
 }
