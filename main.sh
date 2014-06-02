@@ -58,12 +58,12 @@ won_flag=0
 trap "end_game 0; exit" INT #handle INT signal
 
 function generate_piece {
+	change=1
 	while (( blocks < N )); do
 		let index=RANDOM%N
 		let board[index] || {
 			local val=$((RANDOM%10?2:4))
 			let blocks++
-			change=1
 			# just for some delay effects/invert color
 			local r=$((index/board_size))
 			local c=$((index-r*board_size))
