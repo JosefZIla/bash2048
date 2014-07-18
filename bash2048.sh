@@ -14,6 +14,8 @@ declare header="Bash 2048 v1.1 (https://github.com/mydzor/bash2048)"
 #default config
 declare -i board_size=4
 declare -i target=2048
+declare -i reload_flag=0
+declare config_dir="$HOME/.bash2048"
 
 #for colorizing numbers
 declare -a colors
@@ -31,7 +33,7 @@ colors[2048]="31m\033[7"      # red background (won with default target)
 
 exec 3>/dev/null     # no logging by default
 
-trap "end_game 0" INT #handle INT signal
+trap "end_game 0 1" INT #handle INT signal
 
 #simplified replacement of seq command
 function _seq {
@@ -223,6 +225,36 @@ function key_react {
   }
 }
 
+function save_game {
+  rm -rf "$config_dir"
+  mkdir "$config_dir"
+  echo "${board[@]}" > "$config_dir/board"
+  echo "$board_size" > "$config_dir/board_size"
+  echo "$pieces" > "$config_dir/pieces"
+  echo "$target" > "$config_dir/target"
+#  echo "$log_file" > "$config_dir/log_file"
+  echo "$score" > "$config_dir/score"
+  echo "$first_round" > "$config_dir/first_round"
+}
+
+function reload_game {
+  printf "Loading saved game...\n" >&3
+
+  if test ! -d "$config_dir"; then
+    return
+  fi
+  board=(`cat "$config_dir/board"`)
+  board_size=(`cat "$config_dir/board_size"`)
+  board=(`cat "$config_dir/board"`)
+  pieces=(`cat "$config_dir/pieces"`)
+  first_round=(`cat "$config_dir/first_round"`)
+  target=(`cat "$config_dir/target"`)
+  score=(`cat "$config_dir/score"`)
+
+  fields_total=board_size*board_size
+  index_max=board_size-1
+}
+
 function end_game {
   print_board
   printf "GAME OVER\n"
@@ -232,17 +264,30 @@ function end_game {
     printf "Congratulations you have achieved $target\n"
     exit 0
   }
-  printf "You have lost, better luck next time.\033[0m\n"
+  let test -z $2 && {
+    read -n1 -p "Do you want to overwrite saved game? [y|N]: "
+    test "$REPLY" = "Y" || test "$REPLY" = "y" && {
+      save_game
+      printf "\nGame saved. Use -r option next to load this game.\n"
+      exit 0
+    }
+    test "$REPLY" = "" && {
+      printf "\nGame not saved.\n"
+      exit 0
+    }
+  }
+  printf "\nYou have lost, better luck next time.\033[0m\n"
   exit 0
 }
 
 function help {
   cat <<END_HELP
-Usage: $1 [-b INTEGER] [-t INTEGER] [-l FILE] [-h]
+Usage: $1 [-b INTEGER] [-t INTEGER] [-l FILE] [-r] [-h]
 
   -b			specify game board size (sizes 3-9 allowed)
   -t			specify target score to win (needs to be power of 2)
   -l			log debug info into specified file
+  -r			reload the previous game
   -h			this help
 
 END_HELP
@@ -250,7 +295,7 @@ END_HELP
 
 
 #parse commandline options
-while getopts "b:t:l:h" opt; do
+while getopts "b:t:l:rh" opt; do
   case $opt in
     b ) board_size="$OPTARG"
       let '(board_size>=3)&(board_size<=9)' || {
@@ -263,6 +308,7 @@ while getopts "b:t:l:h" opt; do
         printf "Invalid target, has to be power of two\n"
         exit -1 
       };;
+    r ) reload_flag="1";;
     h ) help $0
         exit 0;;
     l ) exec 3>$OPTARG;;
@@ -281,6 +327,12 @@ let pieces=0
 generate_piece
 first_round=$last_added
 generate_piece
+
+#load saved game if flag is set
+if test $reload_flag = "1"; then
+  reload_game
+fi
+
 while true; do
   print_board
   key_react
