@@ -11,6 +11,8 @@ declare -i moves     # stores number of possible moves to determine if player lo
 declare ESC=$'\e'    # escape byte
 declare header="Bash 2048 v1.1 (https://github.com/mydzor/bash2048)"
 
+declare -i start_time=$(date +%s)
+
 #default config
 declare -i board_size=4
 declare -i target=2048
@@ -224,9 +226,17 @@ function key_react {
 }
 
 function end_game {
+  # count game duration
+  end_time=$(date +%s) 
+  let total_time=end_time-start_time
+  
   print_board
   printf "GAME OVER\n"
   printf "Your score: $score\n"
+  
+  printf "This game lasted " 
+  date -u -d @${total_time} +%T
+  
   stty echo
   let $1 && {
     printf "Congratulations you have achieved $target\n"
