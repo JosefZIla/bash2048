@@ -62,11 +62,11 @@ function print_board {
   printf "$header pieces=$pieces target=$target score=$score\n"
   printf "Board status:\n" >&3
   printf "\n"
-  printf '╔------'
+  printf '/------'
   for l in $(_seq 1 $index_max); do
     printf '+------'
   done
-  printf '╗\n'
+  printf '\\\n'
   for l in $(_seq 0 $index_max); do
     printf '|'
     for m in $(_seq 0 $index_max); do
@@ -91,11 +91,11 @@ function print_board {
       printf '\n' >&3
     }
   done
-  printf '\n╚------'
+  printf '\n\\------'
   for l in $(_seq 1 $index_max); do
     printf '+------'
   done
-  printf '╝\n'
+  printf '/\n'
 }
 
 # Generate new piece on the board
@@ -263,7 +263,6 @@ function end_game {
   let total_time=end_time-start_time
   
   print_board
-  printf "GAME OVER\n"
   printf "Your score: $score\n"
   
   printf "This game lasted " 
