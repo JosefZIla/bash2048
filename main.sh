@@ -164,12 +164,22 @@ function key_react {
 	}
 }
 
+function figlet_wrap {
+    > /dev/null which figlet && {
+        /usr/bin/figlet $@
+        return
+    }
+
+    shift 3
+    echo $*
+    echo "install 'figlet' to display large characters."
+}
+
 function end_game {
-	# TODO: remove figlet dependencies
 	if (( $1 == 1 )); then
 		box_board_update
 		status="YOU WON"
-		tput cup $offset_figlet_y 0; figlet -c -w $COLUMNS $status
+		tput cup $offset_figlet_y 0; figlet_wrap -c -w $COLUMNS $status
 		tput cup $LINES 0;
 		echo -n "Want to keep on going (Y/N): "
 		read -d '' -sn 1 result > /dev/null
@@ -184,7 +194,7 @@ function end_game {
 		fi
 	else
 		status="GAME OVER"
-		tput cup $offset_figlet_y 0; figlet -c -w $COLUMNS $status
+		tput cup $offset_figlet_y 0; figlet_wrap -c -w $COLUMNS $status
 	fi
 
 	box_board_terminate
