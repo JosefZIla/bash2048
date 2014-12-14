@@ -1,0 +1,5 @@
+#!/bin/bash
+
+> /dev/null which figlet || {
+    echo "install 'figlet' to display large characters."
+}

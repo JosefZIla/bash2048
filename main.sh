@@ -40,8 +40,7 @@ done
 #----------------------------------------------------------------------
 # late loading
 
-WD="$(dirname $0)"
-PRG="$(basename $0)"
+WD="$(dirname $(readlink $0 || echo $0))"
 
 header="2048 (https://github.com/rhoit/2048)"
 export WD
