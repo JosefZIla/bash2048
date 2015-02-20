@@ -1,0 +1,11 @@
+#compdef 2048
+#autoload 
+
+_arguments : \
+	"-b[specify game board size (sizes 3-9 allowed)]" \
+	"-t[specify target score to win (needs to be power of 2)]" \
+	"-l[log debug info into specified file]" \
+	"-h[this help]"\
+	&& return 0
+
+return 
