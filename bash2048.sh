@@ -265,8 +265,14 @@ function end_game {
   print_board
   printf "Your score: $score\n"
   
-  printf "This game lasted " 
-  date -u -d @${total_time} +%T
+  printf "This game lasted "
+
+  `date --version > /dev/null 2>&1`
+  if [[ "$?" -eq 0 ]]; then
+      date -u -d @${total_time} +%T
+  else
+      date -u -r ${total_time} +%T
+  fi
   
   stty echo
   let $1 && {
