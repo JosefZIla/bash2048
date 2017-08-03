@@ -10,6 +10,8 @@ declare -i moves     # stores number of possible moves to determine if player lo
                      # the game
 declare ESC=$'\e'    # escape byte
 declare header="Bash 2048 v1.1 (https://github.com/mydzor/bash2048)"
+declare highscore_file="$HOME/.bash2048_highscores"
+declare -i highscore_count_max=10 # configurable, max number of saved highscores
 
 declare -i start_time=$(date +%s)
 
@@ -262,6 +264,70 @@ function reload_game {
   index_max=board_size-1
 }
 
+# print the content of the highscores file
+function show_highscores {
+    output="\nHighscore Name Date\n\n"
+    while read line; do
+        output="${output}${line}\n"
+    done < "${highscore_file}"
+    printf "${output}" | column -t
+}
+
+# check if a score is a high score (in top 10 highest scores)
+# input:
+#         $1: score value
+# output:
+#         0 if true
+#         1 if false
+function is_high_score(){
+    least_score=$(cut -f 1| sort -rn| tail -n 1)
+    if [[ "${1}" -ge "${least_score}" ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# save a new highscore
+# inputs:
+#         $1: score value
+#         $2: score timestamp
+function save_highscore {
+    # highscore file doesn't exist or is not readable
+    if [[ ! -f "${highscore_file}" ]] || [[ ! -r "${highscore_file}" ]]; then
+        touch "${highscore_file}"
+    fi
+    echo ""
+    read -p "Please enter your name: " name
+    new_highscore="${1} ${name} $(date -d @${2})"
+    number_of_saved_highscores=$(wc -l "${highscore_file}")
+    if [[ "${number_of_saved_highscores}" = "${highscore_count_max}" ]]; then
+        # replace the last line (lowest highscore) if the limit is reached
+        sed -i "$s/.*/${new_highscore}/" "${highscore_file}"
+    else 
+        # append otherwise
+        echo "${new_highscore}" >> "${highscore_file}"
+    fi
+    # reverse sort (greatest to lowest) the highscores file
+    sort -k1 -nr "${highscore_file}"
+}
+
+# Check if the score is a high score, and ask the user if they want to save it
+# intputs:
+#           $1: score
+#           $2: end timestamp
+function prompt_to_save_high_score {
+  if is_high_score "${1}"; then
+      read -n1 -p "You made a new high score, do you want to save this high score? [y|n]: " 
+      if [[ "${REPLY}" = "y" ]]; then
+          save_highscore "${1}" "${2}"
+          printf "\nNew high score successfully saved. Use -s option next to show highscores.\n"
+      else
+          printf "\nHigh score not saved.\n"
+      fi
+  fi
+}
+
 function end_game {
   # count game duration
   end_time=$(date +%s) 
@@ -289,15 +355,15 @@ function end_game {
     test "$REPLY" = "Y" || test "$REPLY" = "y" && {
       save_game
       printf "\nGame saved. Use -r option next to load this game.\n"
+      prompt_to_save_high_score $score $end_time
       exit 0
     }
     test "$REPLY" = "" && {
       printf "\nGame not saved.\n"
+      prompt_to_save_high_score $score $end_time
       exit 0
     }
   }
-  printf "\nYou have lost, better luck next time.\033[0m\n"
-  exit 0
 }
 
 function help {
@@ -308,6 +374,7 @@ Usage: $1 [-b INTEGER] [-t INTEGER] [-l FILE] [-r] [-h]
   -t			specify target score to win (needs to be power of 2)
   -l			log debug info into specified file
   -r			reload the previous game
+  -s			show the list of high scores
   -h			this help
 
 END_HELP
@@ -315,7 +382,7 @@ END_HELP
 
 
 #parse commandline options
-while getopts "b:t:l:rh" opt; do
+while getopts "b:t:l:rhs" opt; do
   case $opt in
     b ) board_size="$OPTARG"
       let '(board_size>=3)&(board_size<=9)' || {
@@ -332,6 +399,7 @@ while getopts "b:t:l:rh" opt; do
     h ) help $0
         exit 0;;
     l ) exec 3>$OPTARG;;
+    s ) show_highscores; exit;;
     \?) printf "Invalid option: -"$opt", try $0 -h\n" >&2
             exit 1;;
     : ) printf "Option -"$opt" requires an argument, try $0 -h\n" >&2
