@@ -364,7 +364,11 @@ function end_game {
       exit 0
     }
   }
+  printf "\nYou have lost, better luck next time.\033[0m\n"
+  prompt_to_save_high_score $score $end_time
+  exit 0
 }
+
 
 function help {
   cat <<END_HELP
