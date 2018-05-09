@@ -17,7 +17,7 @@ declare -i start_time=$(date +%s)
 declare -i board_size=4
 declare -i target=2048
 declare -i reload_flag=0
-declare config_dir="$HOME/.bash2048"
+declare config_dir="$HOME/.config/bash2048"
 
 #for colorizing numbers
 declare -a colors
