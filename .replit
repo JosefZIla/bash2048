@@ -1,0 +1,2 @@
+language = "bash"
+run = "./bash2048.sh"
