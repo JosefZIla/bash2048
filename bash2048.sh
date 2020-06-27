@@ -266,11 +266,16 @@ function reload_game {
 
 # print the content of the highscores file
 function show_highscores {
-    output="\nHighscore Name Date\n\n"
-    while read line; do
-        output="${output}${line}\n"
+    header="Highscore Name Date"
+    printf "%10s | %30s | %30s" "Highscore" "Name" "Date"
+    echo ""
+    echo "----------------------------------------------------------------------------"
+    while IFS=";" read -r score name date
+    do
+        printf "%10s | %30s | %30s" "$score" "$name" "$date"
+        echo ""
     done < "${highscore_file}"
-    printf "${output}" | column -t
+
 }
 
 # check if a score is a high score (in top 10 highest scores)
@@ -279,9 +284,9 @@ function show_highscores {
 # output:
 #         0 if true
 #         1 if false
-function is_high_score(){
+function is_high_score {
     if [[ -f "$highscore_file" ]]; then
-        least_score=$(cat $highscore_file | cut -f 1 -d\  | sort -rn| tail -n 1)
+        least_score=$(cat $highscore_file | cut -f 1 -d';' | sort -rn| tail -n 1)
         if [[ "${1}" -ge "${least_score}" ]]; then
             return 0
         fi
