@@ -280,7 +280,7 @@ function show_highscores {
 #         0 if true
 #         1 if false
 function is_high_score(){
-    least_score=$(cut -f 1| sort -rn| tail -n 1)
+    least_score=$(cat $highscore_file | cut -f 1 -d\  | sort -rn| tail -n 1)
     if [[ "${1}" -ge "${least_score}" ]]; then
         return 0
     else
