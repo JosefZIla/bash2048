@@ -10,8 +10,6 @@ declare -i moves     # stores number of possible moves to determine if player lo
                      # the game
 declare ESC=$'\e'    # escape byte
 declare header="Bash 2048 v1.1 (https://github.com/mydzor/bash2048)"
-declare highscore_file="$HOME/.bash2048_highscores"
-declare -i highscore_count_max=10 # configurable, max number of saved highscores
 
 declare -i start_time=$(date +%s)
 
@@ -20,6 +18,8 @@ declare -i board_size=4
 declare -i target=2048
 declare -i reload_flag=0
 declare config_dir="$HOME/.bash2048"
+declare highscore_file="$config_dir/.bash2048_highscores"
+declare -i highscore_count_max=10 # configurable, max number of saved highscores
 
 #for colorizing numbers
 declare -a colors
@@ -289,9 +289,11 @@ function is_high_score {
         least_score=$(cat $highscore_file | cut -f 1 -d';' | sort -rn| tail -n 1)
         if [[ "${1}" -ge "${least_score}" ]]; then
             return 0
+        else
+            return 1
         fi
     fi
-    return 1
+    return 0
 }
 
 # save a new highscore
