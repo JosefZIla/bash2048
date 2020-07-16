@@ -305,7 +305,7 @@ function save_highscore {
     fi
     echo ""
     read -p "Please enter your name: " name
-    new_highscore="${1} ${name} $(date -d @${2})"
+    new_highscore="${1};${name};$(date -d @${2})"
     number_of_saved_highscores=$(wc -l "${highscore_file}")
     if [[ "${number_of_saved_highscores}" = "${highscore_count_max}" ]]; then
         # replace the last line (lowest highscore) if the limit is reached
