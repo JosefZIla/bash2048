@@ -363,14 +363,12 @@ function end_game {
     test "$REPLY" = "Y" || test "$REPLY" = "y" && {
       save_game
       printf "\nGame saved. Use -r option next to load this game.\n"
-      prompt_to_save_high_score $score $end_time
-      exit 0
     }
     test "$REPLY" = "" && {
       printf "\nGame not saved.\n"
-      prompt_to_save_high_score $score $end_time
-      exit 0
     }
+    prompt_to_save_high_score $score $end_time
+    exit 0
   }
   printf "\nYou have lost, better luck next time.\033[0m\n"
   prompt_to_save_high_score $score $end_time
